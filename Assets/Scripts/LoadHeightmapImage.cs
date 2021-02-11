@@ -1,18 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class LoadHeightmapImage : MonoBehaviour
 {
+    [Header("Terrain")]
     private TerrainData terrainData;
-    [SerializeField] Texture2D heightMapImage;
-
+    [SerializeField] List<Texture2D> heightMapImage; 
+    [SerializeField] List<TerrainTextureData> terrainTextureDataList;
+    [SerializeField] float terrainTextureBlendOffset = 0.01f;
+    private int randomHeightMap;
     [Space]
 
+    [Header("Water")]
     [SerializeField] GameObject water;
-    [SerializeField, Range(0,1)] float waterHeight;
+    [SerializeField] float waterHeight;
 
     [Space]
 
+    [Header("Clouds")]
     [SerializeField] Transform cloudParent;
     [SerializeField] List<GameObject> cloud;
     [SerializeField] Material rainMat;
@@ -20,26 +26,29 @@ public class LoadHeightmapImage : MonoBehaviour
 
     [Space]
 
+    [Header("Trees")]
     [SerializeField] List<TreeData> treeDataList;
     [SerializeField] int maxTrees = 2000;
     [SerializeField] int treeSpacing = 10;
-    [SerializeField] float randomXRange = 5.0f;
-    [SerializeField] float randomZRange = 5.0f;
+    [SerializeField] float randomXRange = 0.0f;
+    [SerializeField] float randomZRange = 0.0f;
     [SerializeField] int terrainLayerIndex = 8;
 
     [Space]
 
+    [Header("Scale")]
     [SerializeField] Vector3 heightMapScale = new Vector3(1, 1, 1);
     [SerializeField] bool loadHeightMap = true;
 
     void Start()
     {
+        randomHeightMap = UnityEngine.Random.Range(0, heightMapImage.Count);
         terrainData = Terrain.activeTerrain.terrainData;
-
         UpdateHeightmap();
+        TerrainTexture();
         AddWater();
         AddClouds();
-        AddTrees();
+        AddTrees(maxTrees);
     }
 
     void UpdateHeightmap()
@@ -53,7 +62,7 @@ public class LoadHeightmapImage : MonoBehaviour
                 if (loadHeightMap)
                 {
 
-                    heightMap[width, height] = heightMapImage.GetPixel((int)(width * heightMapScale.x),
+                    heightMap[width, height] = heightMapImage[randomHeightMap].GetPixel((int)(width * heightMapScale.x),
                                                                        (int)(height * heightMapScale.z)).grayscale
                                                                        * heightMapScale.y;
                 }
@@ -66,6 +75,7 @@ public class LoadHeightmapImage : MonoBehaviour
     void AddWater()
     {
         GameObject waterGameObject = GameObject.Find("Water");
+        waterHeight = UnityEngine.Random.Range(0.3f, 0.4f);
 
         if (!waterGameObject)
         {
@@ -85,10 +95,10 @@ public class LoadHeightmapImage : MonoBehaviour
     {
         for(int i = 0; i < cloudCoverage; i++)
         {
-            float randomX = Random.Range(transform.position.x, terrainData.size.x);
+            float randomX = UnityEngine.Random.Range(transform.position.x, terrainData.size.x);
             float y = 1 * terrainData.size.y;
-            float randomZ = Random.Range(transform.position.x, terrainData.size.z);
-            GameObject tempCloud = Instantiate(cloud[Random.Range(0, cloud.Count-1)], new Vector3(randomX, y, randomZ), Quaternion.identity);
+            float randomZ = UnityEngine.Random.Range(transform.position.x, terrainData.size.z);
+            GameObject tempCloud = Instantiate(cloud[UnityEngine.Random.Range(0, cloud.Count-1)], new Vector3(randomX, y, randomZ), Quaternion.identity);
             tempCloud.transform.parent = cloudParent;
             AddRain(tempCloud.transform);
         }
@@ -102,7 +112,7 @@ public class LoadHeightmapImage : MonoBehaviour
         }
     }
 
-    void AddTrees()
+    void AddTrees(int max)
     {
         TreePrototype[] trees = new TreePrototype[treeDataList.Count];
 
@@ -122,15 +132,15 @@ public class LoadHeightmapImage : MonoBehaviour
             {
                 for (int treePrototypeIndex = 0; treePrototypeIndex < trees.Length; treePrototypeIndex++)
                 {
-                    if (treeInstanceList.Count < maxTrees)
+                    if (treeInstanceList.Count < max)
                     {
                         float currentHeight = terrainData.GetHeight(x, z) / terrainData.size.y;
 
                         if (currentHeight >= treeDataList[treePrototypeIndex].minHeight &&
                            currentHeight <= treeDataList[treePrototypeIndex].maxHeight)
                         {
-                            float randomX = (x + Random.Range(-randomXRange, randomXRange)) / terrainData.size.x;
-                            float randomZ = (z + Random.Range(-randomZRange, randomZRange)) / terrainData.size.z;
+                            float randomX = (x + UnityEngine.Random.Range(-randomXRange, randomXRange)) / terrainData.size.x;
+                            float randomZ = (z + UnityEngine.Random.Range(-randomZRange, randomZRange)) / terrainData.size.z;
 
                             TreeInstance treeInstance = new TreeInstance();
 
@@ -152,7 +162,7 @@ public class LoadHeightmapImage : MonoBehaviour
 
                                 treeInstance.position = new Vector3(treeInstance.position.x, treeHeight, treeInstance.position.z);
 
-                                treeInstance.rotation = Random.Range(0, 360);
+                                treeInstance.rotation = UnityEngine.Random.Range(0, 360);
                                 treeInstance.prototypeIndex = treePrototypeIndex;
                                 treeInstance.color = Color.white;
                                 treeInstance.lightmapColor = Color.white;
@@ -181,12 +191,11 @@ public class LoadHeightmapImage : MonoBehaviour
 
             var emission = rain.emission;
             emission.enabled = true;
-            emission.rateOverTime = Random.Range(50, 100);
+            emission.rateOverTime = UnityEngine.Random.Range(50, 100);
 
             var shape = rain.shape;
             shape.enabled = true;
             shape.shapeType = ParticleSystemShapeType.MeshRenderer;
-            print(cloud.GetChild(i).GetComponent<MeshFilter>().mesh);
             shape.meshRenderer = cloud.GetChild(i).GetComponent<MeshRenderer>();
 
             var force = rain.forceOverLifetime;
@@ -207,6 +216,67 @@ public class LoadHeightmapImage : MonoBehaviour
             var render = rain.GetComponent<ParticleSystemRenderer>();
             render.renderMode = ParticleSystemRenderMode.Stretch;
             render.material = rainMat;
+        }
+    }
+
+    void TerrainTexture()
+    {
+        TerrainLayer[] terrainLayers = new TerrainLayer[terrainTextureDataList.Count];
+
+        for (int i = 0; i < terrainTextureDataList.Count; i++)
+        {
+            terrainLayers[i] = new TerrainLayer();
+            terrainLayers[i].diffuseTexture = terrainTextureDataList[i].terrainTexture;
+            terrainLayers[i].tileSize = terrainTextureDataList[i].tileSize;
+        }
+
+        terrainData.terrainLayers = terrainLayers;
+
+        float[,] heightMap = terrainData.GetHeights(0, 0, terrainData.heightmapResolution, terrainData.heightmapResolution);
+
+        float[,,] alphaMapList = new float[terrainData.alphamapWidth, terrainData.alphamapHeight, terrainData.alphamapLayers];
+
+        for (int height = 0; height < terrainData.alphamapHeight; height++)
+        {
+            for (int width = 0; width < terrainData.alphamapWidth; width++)
+            {
+                float[] splatmap = new float[terrainData.alphamapLayers];
+
+                for (int i = 0; i < terrainTextureDataList.Count; i++)
+                {
+                    float minHeight = terrainTextureDataList[i].minHeight - terrainTextureBlendOffset;
+                    float maxHeight = terrainTextureDataList[i].maxHeight + terrainTextureBlendOffset;
+
+                    if (heightMap[width, height] >= minHeight && heightMap[width, height] <= maxHeight)
+                    {
+                        splatmap[i] = 1;
+                    }
+                }
+
+                NormaliseSplatMap(splatmap);
+
+                for (int j = 0; j < terrainTextureDataList.Count; j++)
+                {
+                    alphaMapList[width, height, j] = splatmap[j];
+                }
+            }
+        }
+
+        terrainData.SetAlphamaps(0, 0, alphaMapList);
+    }
+
+    void NormaliseSplatMap(float[] splatmap)
+    {
+        float total = 0;
+
+        for (int i = 0; i < splatmap.Length; i++)
+        {
+            total += splatmap[i];
+        }
+
+        for (int i = 0; i < splatmap.Length; i++)
+        {
+            splatmap[i] = splatmap[i] / total;
         }
     }
 }

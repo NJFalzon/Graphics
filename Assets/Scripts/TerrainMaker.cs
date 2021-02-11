@@ -163,10 +163,6 @@ public class TerrainMaker : MonoBehaviour
   
     void CreateTerrain()
     {
-        //creates a new empty 2D array of float based on the dimensions of heightmap resolution set in the settings
-        //float[,] heightMap = new float[terrainData.heightmapResolution, terrainData.heightmapResolution];
-
-        ////gets the height map data that already exists in the terrain and loads it into a 2D array
         float[,] heightMap = terrainData.GetHeights(0, 0, terrainData.heightmapResolution, terrainData.heightmapResolution);
 
         for (int width = 0; width < terrainData.heightmapResolution; width++)
@@ -193,7 +189,6 @@ public class TerrainMaker : MonoBehaviour
         terrainData.SetHeights(0, 0, heightMap);
     }
 
-    //this method is going to add textures to the terrain
     void TerrainTexture()
     {
         TerrainLayer[] terrainLayers = new TerrainLayer[terrainTextureDataList.Count];

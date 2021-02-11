@@ -15,6 +15,11 @@ public class Movement : MonoBehaviour
     [Space]
     [SerializeField] KeyCode right;
     [SerializeField] KeyCode rightAlternate;
+    [Space]
+    [SerializeField] KeyCode jump;
+    [SerializeField] KeyCode jumpAlternate;
+    [Space]
+    [SerializeField] float force;
 
     private Rigidbody rb;
 
@@ -29,6 +34,7 @@ public class Movement : MonoBehaviour
     void Update()
     {
         Look();
+        Jump();
     }
 
     void FixedUpdate()
@@ -36,11 +42,19 @@ public class Movement : MonoBehaviour
         Move();
     }
 
+    void Jump()
+    {
+        if (Input.GetKeyDown(jump) || Input.GetKeyDown(jumpAlternate))
+        {
+            rb.AddForce(transform.up * force * 10, ForceMode.Impulse);
+        }
+    }
+
     void MoveForward()
     {
         if (Input.GetKey(forward) || Input.GetKey(forwardAlternate))
         {
-            rb.AddForce(transform.forward * 5, ForceMode.Impulse);
+            rb.AddForce(transform.forward * force, ForceMode.Impulse);
         }
     }
 
@@ -48,7 +62,7 @@ public class Movement : MonoBehaviour
     {
         if (Input.GetKey(backward) || Input.GetKey(backwardAlternate))
         {
-            rb.AddForce(-transform.forward * 5, ForceMode.Impulse);
+            rb.AddForce(-transform.forward * force, ForceMode.Impulse);
         }
     }
 
@@ -56,7 +70,7 @@ public class Movement : MonoBehaviour
     {
         if (Input.GetKey(right) || Input.GetKey(rightAlternate))
         {
-            rb.AddForce(transform.right * 5, ForceMode.Impulse);
+            rb.AddForce(transform.right * force, ForceMode.Impulse);
         }
     }
 
@@ -64,7 +78,7 @@ public class Movement : MonoBehaviour
     {
         if (Input.GetKey(left) || Input.GetKey(leftAlternate))
         {
-            rb.AddForce(-transform.right * 5, ForceMode.Impulse);
+            rb.AddForce(-transform.right * force, ForceMode.Impulse);
         }
     }
 
@@ -72,8 +86,11 @@ public class Movement : MonoBehaviour
     void Look()
     {
         float x = Input.GetAxis("Mouse X") * 2;
+        float y = Input.GetAxis("Mouse Y");
+        transform.Rotate(new Vector3(-y, x, 0));
 
-        transform.Rotate(new Vector3(0, x, 0));
+        float z = transform.eulerAngles.z;
+        transform.Rotate(0, 0, -z);
     }
 
     void Move()
@@ -87,9 +104,9 @@ public class Movement : MonoBehaviour
 
     void LimitVelocity()
     {
-        if(rb.velocity.magnitude > 5)
+        if(rb.velocity.magnitude > 20)
         {
-            rb.velocity = rb.velocity.normalized*5;
+            rb.velocity = rb.velocity.normalized*20;
         }
     }
 }
